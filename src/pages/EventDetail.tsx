@@ -29,8 +29,10 @@ const EventDetail = () => {
   const operators = useAppStore(s => s.operators);
   const createShift = useAppStore(s => s.createShift);
   const assignOperators = useAppStore(s => s.assignOperators);
+  const addOperatorsToShift = useAppStore(s => s.addOperatorsToShift);
   const setOperatorSlot = useAppStore(s => s.setOperatorSlot);
   const removeOperator = useAppStore(s => s.removeOperator);
+  const replaceOperator = useAppStore(s => s.replaceOperator);
   const updateEventAddress = useAppStore(s => s.updateEventAddress);
   const updateEventActivityCode = useAppStore(s => s.updateEventActivityCode);
   const setTeamLeader = useAppStore(s => s.setTeamLeader);
@@ -54,6 +56,7 @@ const EventDetail = () => {
   const [assignOpen, setAssignOpen] = useState(false);
   const [currentShift, setCurrentShift] = useState<string | null>(null);
   const [currentSlotIndex, setCurrentSlotIndex] = useState<number | null>(null);
+  const [currentOperatorId, setCurrentOperatorId] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>("");
   const [editingAddress, setEditingAddress] = useState(false);
   const [tempAddress, setTempAddress] = useState(event?.address || "");
@@ -61,42 +64,62 @@ const EventDetail = () => {
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [tempNotes, setTempNotes] = useState("");
   const [notesOpen, setNotesOpen] = useState(false);
+  const [viewingShiftNotes, setViewingShiftNotes] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   if (!event) return <main className="container py-8">
       <p className="text-muted-foreground">Evento non trovato.</p>
     </main>;
-  const onAssign = (selectedIds: string[]) => {
-    if (currentShift && currentSlotIndex !== null) {
-      // Assegnare operatore a slot specifico di turno esistente
-      if (selectedIds.length > 0) {
-        setOperatorSlot(currentShift, currentSlotIndex, selectedIds[0]);
-      }
-    } else if (!currentShift) {
-      // Creare nuovo turno con operatori assegnati
-      if (!date || !start || !end || numOperators <= 0) return;
-      const d = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      
-      // Create shift with proper operator assignments
-      const operatorSlots = Array(numOperators).fill("");
-      selectedIds.forEach((operatorId, index) => {
-        if (index < numOperators) {
-          operatorSlots[index] = operatorId;
+  const onAssign = async (selectedIds: string[]) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    
+    try {
+      if (currentShift && currentSlotIndex !== null && currentOperatorId) {
+        // Replace operator in specific slot
+        if (selectedIds.length > 0) {
+          replaceOperator(currentShift, currentOperatorId, selectedIds[0]);
         }
-      });
-      
-      createShift({
-        eventId: event.id,
-        date: d,
-        startTime: start,
-        endTime: end,
-        operatorIds: operatorSlots,
-        activityType: (activityType || undefined) as any,
-        requiredOperators: numOperators,
-        notes: notes || undefined
-      });
+      } else if (currentShift && currentSlotIndex !== null) {
+        // Assign operator to specific slot of existing shift
+        if (selectedIds.length > 0) {
+          setOperatorSlot(currentShift, currentSlotIndex, selectedIds[0]);
+        }
+      } else if (currentShift) {
+        // Add multiple operators to existing shift
+        const uniqueIds = Array.from(new Set(selectedIds));
+        addOperatorsToShift(currentShift, uniqueIds);
+      } else if (!currentShift) {
+        // Create new shift with operators assigned
+        if (!date || !start || !end || numOperators <= 0) return;
+        const d = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        
+        // Create shift with proper operator assignments
+        const operatorSlots = Array(numOperators).fill("");
+        selectedIds.forEach((operatorId, index) => {
+          if (index < numOperators) {
+            operatorSlots[index] = operatorId;
+          }
+        });
+        
+        createShift({
+          eventId: event.id,
+          date: d,
+          startTime: start,
+          endTime: end,
+          operatorIds: operatorSlots,
+          activityType: (activityType || undefined) as any,
+          requiredOperators: numOperators,
+          notes: notes || undefined
+        });
+      }
+    } finally {
+      setIsSaving(false);
     }
+    
     setAssignOpen(false);
     setCurrentShift(null);
     setCurrentSlotIndex(null);
+    setCurrentOperatorId(null);
     if (!currentShift) {
       setNotes("");
       setDate(undefined);
@@ -437,9 +460,9 @@ const EventDetail = () => {
                       <div className="flex items-center gap-2">
                         <span>{`${s.date.split("-").reverse().join("/")}`}</span>
                         {operatorIndex === 0 && (
-                          <span className="operator-count text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                            {assignedOperatorsCount}/{s.requiredOperators}
-                          </span>
+                           <span className="operator-count text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                             {s.operatorIds.filter(id => id && id.trim() !== "").length}/{s.requiredOperators}
+                           </span>
                         )}
                       </div>
                     </TableCell>
@@ -501,29 +524,35 @@ const EventDetail = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      {s.notes ? <Button variant="ghost" size="sm" onClick={() => {
-                        setEditingNotes(s.id);
-                        setTempNotes(s.notes || "");
-                      }}>
-                          <FileText className="h-4 w-4" />
-                        </Button> : <span className="text-muted-foreground">-</span>}
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => {
+                          setViewingShiftNotes(s.id);
+                          setTempNotes(s.notes || "");
+                        }}
+                        aria-label="Visualizza/modifica note turno"
+                      >
+                        <FileText className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                      <TableCell>
                         <div className="flex items-center gap-2">
                           {operatorId && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setCurrentShift(s.id);
-                                setCurrentSlotIndex(originalSlotIndex);
-                                setAssignOpen(true);
-                              }}
-                              className="h-8 w-8 p-0"
-                              aria-label={`Riassegna operatore per slot ${originalSlotIndex + 1}`}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => {
+                                 setCurrentShift(s.id);
+                                 setCurrentSlotIndex(originalSlotIndex);
+                                 setCurrentOperatorId(operatorId);
+                                 setAssignOpen(true);
+                               }}
+                               className="h-8 w-8 p-0"
+                               aria-label={`Riassegna operatore per slot ${originalSlotIndex + 1}`}
+                             >
+                               <Edit2 className="h-4 w-4" />
+                             </Button>
                           )}
                           {operatorId && (
                             <Button
@@ -538,31 +567,10 @@ const EventDetail = () => {
                                   rowElement.style.transform = "translateY(-10px)";
                                   rowElement.style.transition = "all 0.3s ease-out";
                                   
-                                  setTimeout(() => {
-                                    // Remove this specific operator assignment (only this slot)
-                                    setOperatorSlot(s.id, originalSlotIndex, "");
-                                    
-                                    // Check if the shift becomes completely empty after removal
-                                    setTimeout(() => {
-                                      const currentShift = shifts.find(shift => shift.id === s.id);
-                                      if (currentShift) {
-                                        const hasAssignedOperators = currentShift.operatorIds.some(id => id && id.trim() !== "");
-                                        if (!hasAssignedOperators) {
-                                          // Delete the entire shift if no operators remain
-                                          deleteShift(s.id);
-                                         } else {
-                                           // Update operator count in remaining rows for this shift
-                                           setTimeout(() => {
-                                             const remainingRows = document.querySelectorAll(`[data-parent-id="${s.id}"] .operator-count`);
-                                             const newCount = currentShift.operatorIds.filter(id => id && id.trim() !== "").length;
-                                             remainingRows.forEach(countEl => {
-                                               countEl.textContent = `${newCount}/${s.requiredOperators}`;
-                                             });
-                                           }, 100);
-                                         }
-                                      }
-                                    }, 50);
-                                  }, 300);
+                                   setTimeout(() => {
+                                     // Remove this specific operator assignment (only this slot)
+                                     setOperatorSlot(s.id, originalSlotIndex, "");
+                                   }, 300);
                                 }
                               }}
                               className="h-8 w-8 p-0 text-destructive hover:text-destructive"
@@ -628,6 +636,36 @@ const EventDetail = () => {
                 Annulla
               </Button>
               <Button onClick={() => setNotesOpen(false)}>
+                Salva
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog for viewing/editing shift notes */}
+      <Dialog open={!!viewingShiftNotes} onOpenChange={() => setViewingShiftNotes(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Note Turno</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea 
+              value={tempNotes} 
+              onChange={(e) => setTempNotes(e.target.value)} 
+              placeholder="Inserisci note per il turno" 
+              rows={4} 
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setViewingShiftNotes(null)}>
+                Annulla
+              </Button>
+              <Button onClick={() => {
+                if (viewingShiftNotes) {
+                  updateShiftNotes(viewingShiftNotes, tempNotes);
+                  setViewingShiftNotes(null);
+                }
+              }}>
                 Salva
               </Button>
             </div>

@@ -35,6 +35,7 @@ const OperatorAssignDialog = ({ open, onOpenChange, operators, onConfirm }: Prop
 const confirm = () => {
   onConfirm(selected);
   setSelected([]);
+  onOpenChange(false);
 };
 
   return (

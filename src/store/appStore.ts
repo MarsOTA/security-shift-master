@@ -100,6 +100,7 @@ interface AppState {
   getShiftsByEvent: (eventId: ID) => Shift[];
   updateEventAddress: (eventId: ID, address: string) => void;
   updateEventActivityCode: (eventId: ID, activityCode: string) => void;
+  addOperatorsToShift: (shiftId: ID, operatorIds: ID[]) => void;
 
   createTask: (data: Omit<Task, "id" | "createdAt" | "completed">) => Task;
   updateTask: (id: ID, data: Partial<Pick<Task, "title" | "completed">>) => void;
@@ -165,6 +166,24 @@ export const useAppStore = create<AppState>()(
               ? { ...s, operatorIds: Array.from(new Set([...s.operatorIds, ...operatorIds])) }
               : s
           ),
+        }));
+      },
+
+      addOperatorsToShift: (shiftId, operatorIds) => {
+        set((state) => ({
+          shifts: state.shifts.map((s) => {
+            if (s.id !== shiftId) return s;
+            
+            // Deduplication: use Array.from(new Set())
+            const uniqueIds = Array.from(new Set(operatorIds));
+            
+            // Filter existing: don't add operators already assigned
+            const existingIds = new Set(s.operatorIds.filter(id => id && id.trim() !== ""));
+            const toAdd = uniqueIds.filter(id => !existingIds.has(id));
+            
+            // Add new operators to existing ones
+            return { ...s, operatorIds: [...s.operatorIds, ...toAdd] };
+          }),
         }));
       },
 
