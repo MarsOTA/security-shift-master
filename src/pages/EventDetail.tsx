@@ -265,6 +265,24 @@ const EventDetail = () => {
           <h2 className="font-bold text-2xl">
             Turni evento
           </h2>
+          <div className="flex items-center gap-4 ml-auto">
+            <div className="space-y-1">
+              <Label className="text-sm text-muted-foreground">Data Inizio Evento</Label>
+              <Input
+                type="date"
+                className="w-40"
+                placeholder="Data inizio"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-sm text-muted-foreground">Data Fine Evento</Label>
+              <Input
+                type="date"
+                className="w-40"
+                placeholder="Data fine"
+              />
+            </div>
+          </div>
         </div>
         <div className="rounded-lg border border-border overflow-hidden">
           <Table>
