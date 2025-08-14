@@ -94,10 +94,10 @@ const EventDetail = () => {
         // Find current shift to get existing operator slots
         const shift = shifts.find(s => s.id === currentShift);
         if (shift) {
-          // Create exactly numOperators new empty slots
+          // Create exactly numOperators new slots, each with an operator (or empty if not enough operators selected)
           for (let i = 0; i < numOperators; i++) {
-            // Add operator if available, otherwise add empty slot
-            const operatorId = i < uniqueIds.length ? uniqueIds[i] : "";
+            // Always add a slot - if we have an operator use it, otherwise use a placeholder that will show as empty row
+            const operatorId = i < uniqueIds.length ? uniqueIds[i] : " "; // Use space instead of empty string to force row creation
             setOperatorSlot(currentShift, shift.operatorIds.length + i, operatorId);
           }
         }
@@ -345,8 +345,8 @@ const EventDetail = () => {
             </TableHeader>
             <TableBody>
               {sortedShifts.map(s => {
-                // Only show rows for assigned operators (non-empty operatorIds)
-                const assignedOperators = s.operatorIds.filter(id => id && id.trim() !== "");
+                // Show rows for all operators slots (including empty ones marked with space)
+                const assignedOperators = s.operatorIds.filter(id => id !== "");
                 
                 // Count assigned operators for this shift (real count from actual data)
                 const assignedOperatorsCount = assignedOperators.length;
@@ -474,7 +474,7 @@ const EventDetail = () => {
                         <span>{`${s.date.split("-").reverse().join("/")}`}</span>
                         {operatorIndex === 0 && (
                            <span className="operator-count text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                             {s.operatorIds.filter(id => id && id.trim() !== "").length}/{s.requiredOperators}
+                             {s.operatorIds.filter(id => id && id.trim() !== "" && id !== " ").length}/{s.requiredOperators}
                            </span>
                         )}
                       </div>
@@ -511,7 +511,7 @@ const EventDetail = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {operatorId ? getOperatorName(operatorId) : (
+                      {operatorId && operatorId.trim() !== "" && operatorId !== " " ? getOperatorName(operatorId) : (
                         <Button 
                           variant="outline" 
                           size="sm" 
@@ -525,8 +525,8 @@ const EventDetail = () => {
                         </Button>
                       )}
                     </TableCell>
-                    <TableCell>
-                      {operatorId ? (
+                     <TableCell>
+                       {operatorId && operatorId.trim() !== "" && operatorId !== " " ? (
                         <Checkbox 
                           checked={s.teamLeaderId === operatorId} 
                           onCheckedChange={() => handleToggleTeamLeader(s.id, operatorId, s.teamLeaderId === operatorId)} 
@@ -554,8 +554,8 @@ const EventDetail = () => {
                       )}
                     </TableCell>
                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {operatorId && (
+                         <div className="flex items-center gap-2">
+                           {operatorId && operatorId.trim() !== "" && operatorId !== " " && (
                              <Button
                                variant="ghost"
                                size="sm"
@@ -570,8 +570,8 @@ const EventDetail = () => {
                              >
                                <Edit2 className="h-4 w-4" />
                              </Button>
-                          )}
-                          {operatorId && (
+                           )}
+                           {operatorId && operatorId.trim() !== "" && operatorId !== " " && (
                             <Button
                               variant="ghost"
                               size="sm"
