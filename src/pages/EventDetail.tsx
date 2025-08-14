@@ -85,9 +85,22 @@ const EventDetail = () => {
           setOperatorSlot(currentShift, currentSlotIndex, selectedIds[0]);
         }
       } else if (currentShift) {
-        // Add multiple operators to existing shift
+        // Add multiple operators to existing shift - create exactly numOperators new slots
+        if (numOperators <= 0) return;
+        
+        // De-duplication input
         const uniqueIds = Array.from(new Set(selectedIds));
-        addOperatorsToShift(currentShift, uniqueIds);
+        
+        // Find current shift to get existing operator slots
+        const shift = shifts.find(s => s.id === currentShift);
+        if (shift) {
+          // Create exactly numOperators new empty slots
+          for (let i = 0; i < numOperators; i++) {
+            // Add operator if available, otherwise add empty slot
+            const operatorId = i < uniqueIds.length ? uniqueIds[i] : "";
+            setOperatorSlot(currentShift, shift.operatorIds.length + i, operatorId);
+          }
+        }
       } else if (!currentShift) {
         // Create new shift with operators assigned
         if (!date || !start || !end || numOperators <= 0) return;
@@ -524,17 +537,21 @@ const EventDetail = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={() => {
-                          setViewingShiftNotes(s.id);
-                          setTempNotes(s.notes || "");
-                        }}
-                        aria-label="Visualizza/modifica note turno"
-                      >
-                        <FileText className="h-4 w-4" />
-                      </Button>
+                      {s.notes && s.notes.trim() !== "" ? (
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => {
+                            setViewingShiftNotes(s.id);
+                            setTempNotes(s.notes || "");
+                          }}
+                          aria-label="Visualizza/modifica note turno"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                      <TableCell>
                         <div className="flex items-center gap-2">
@@ -578,10 +595,25 @@ const EventDetail = () => {
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                          )}
-                          
-                        </div>
-                      </TableCell>
+                           )}
+                           {operatorIndex === 0 && (
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={() => {
+                                 setCurrentShift(s.id);
+                                 setCurrentSlotIndex(null);
+                                 setCurrentOperatorId(null);
+                                 setAssignOpen(true);
+                               }}
+                               className="h-8 w-8 p-0"
+                               aria-label="Aggiungi operatori a questo turno"
+                             >
+                               <Plus className="h-4 w-4" />
+                             </Button>
+                           )}
+                         </div>
+                       </TableCell>
                   </TableRow>
                   );
                 });
