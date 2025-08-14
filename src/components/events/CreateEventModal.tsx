@@ -41,7 +41,14 @@ const CreateEventModal = ({ open, onOpenChange }: CreateEventModalProps) => {
     const clientName = clients.find((c) => c.id === values.clientId)?.name || "Cliente";
     const brandName = brands.find((b) => b.id === values.brandId)?.name || "Brand";
     const title = `${brandName} - ${clientName}`;
-    const ev = createEvent({ title, clientId: values.clientId, brandId: values.brandId, address: values.address });
+    const ev = createEvent({ 
+      title, 
+      clientId: values.clientId, 
+      brandId: values.brandId, 
+      address: values.address,
+      startDate: values.startDate,
+      endDate: values.endDate 
+    });
 
     toast({ title: "Evento creato", description: `${title} salvato correttamente` });
     onOpenChange(false);

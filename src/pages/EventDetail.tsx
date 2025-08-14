@@ -71,15 +71,24 @@ const EventDetail = () => {
         setOperatorSlot(currentShift, currentSlotIndex, selectedIds[0]);
       }
     } else if (!currentShift) {
-      // Creare nuovo turno con slot vuoti
+      // Creare nuovo turno con operatori assegnati
       if (!date || !start || !end || numOperators <= 0) return;
       const d = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      
+      // Create shift with proper operator assignments
+      const operatorSlots = Array(numOperators).fill("");
+      selectedIds.forEach((operatorId, index) => {
+        if (index < numOperators) {
+          operatorSlots[index] = operatorId;
+        }
+      });
+      
       createShift({
         eventId: event.id,
         date: d,
         startTime: start,
         endTime: end,
-        operatorIds: Array(numOperators).fill(""), // Create empty slots
+        operatorIds: operatorSlots,
         activityType: (activityType || undefined) as any,
         requiredOperators: numOperators,
         notes: notes || undefined
@@ -263,26 +272,11 @@ const EventDetail = () => {
       <section>
         <div className="flex items-center gap-4 mb-4">
           <h2 className="font-bold text-2xl">
-            Turni evento
+            {event.startDate && event.endDate ? 
+              `Turni evento dal ${event.startDate.split("-").reverse().join("/")} al ${event.endDate.split("-").reverse().join("/")}` :
+              "Turni evento"
+            }
           </h2>
-          <div className="flex items-center gap-4 ml-auto">
-            <div className="space-y-1">
-              <Label className="text-sm text-muted-foreground">Data Inizio Evento</Label>
-              <Input
-                type="date"
-                className="w-40"
-                placeholder="Data inizio"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-sm text-muted-foreground">Data Fine Evento</Label>
-              <Input
-                type="date"
-                className="w-40"
-                placeholder="Data fine"
-              />
-            </div>
-          </div>
         </div>
         <div className="rounded-lg border border-border overflow-hidden">
           <Table>
@@ -556,14 +550,16 @@ const EventDetail = () => {
                                         if (!hasAssignedOperators) {
                                           // Delete the entire shift if no operators remain
                                           deleteShift(s.id);
-                                        } else {
-                                          // Update operator count in remaining rows for this shift
-                                          const remainingRows = document.querySelectorAll(`[data-parent-id="${s.id}"] .operator-count`);
-                                          const newCount = currentShift.operatorIds.filter(id => id && id.trim() !== "").length;
-                                          remainingRows.forEach(countEl => {
-                                            countEl.textContent = `${newCount}/${s.requiredOperators}`;
-                                          });
-                                        }
+                                         } else {
+                                           // Update operator count in remaining rows for this shift
+                                           setTimeout(() => {
+                                             const remainingRows = document.querySelectorAll(`[data-parent-id="${s.id}"] .operator-count`);
+                                             const newCount = currentShift.operatorIds.filter(id => id && id.trim() !== "").length;
+                                             remainingRows.forEach(countEl => {
+                                               countEl.textContent = `${newCount}/${s.requiredOperators}`;
+                                             });
+                                           }, 100);
+                                         }
                                       }
                                     }, 50);
                                   }, 300);

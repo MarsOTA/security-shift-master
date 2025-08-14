@@ -16,7 +16,7 @@ interface Props {
 
 const OperatorAssignDialog = ({ open, onOpenChange, operators, onConfirm }: Props) => {
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<string>("");
+  const [selected, setSelected] = useState<string[]>([]);
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
     return operators.filter((o) =>
@@ -24,13 +24,17 @@ const OperatorAssignDialog = ({ open, onOpenChange, operators, onConfirm }: Prop
     );
   }, [operators, query]);
 
-  const selectOperator = (id: string) => setSelected(id);
+  const toggleOperator = (id: string) => {
+    setSelected(prev => 
+      prev.includes(id) 
+        ? prev.filter(opId => opId !== id)
+        : [...prev, id]
+    );
+  };
 
 const confirm = () => {
-  if (selected !== null) {
-    onConfirm([selected]);
-  }
-  setSelected("");
+  onConfirm(selected);
+  setSelected([]);
 };
 
   return (
@@ -60,16 +64,16 @@ const confirm = () => {
                 <TableRow 
                   className={cn(
                     "cursor-pointer hover:bg-muted/80 transition-colors",
-                    selected === "" && "bg-primary/10 border-l-4 border-l-primary"
+                    selected.length === 0 && "bg-primary/10 border-l-4 border-l-primary"
                   )}
-                  onClick={() => selectOperator("")}
+                  onClick={() => setSelected([])}
                 >
                   <TableCell>
                     <div className={cn(
                       "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-                      selected === "" ? "border-primary bg-primary" : "border-muted-foreground"
+                      selected.length === 0 ? "border-primary bg-primary" : "border-muted-foreground"
                     )}>
-                      {selected === "" && <div className="w-2 h-2 rounded-full bg-white" />}
+                      {selected.length === 0 && <div className="w-2 h-2 rounded-full bg-white" />}
                     </div>
                   </TableCell>
                   <TableCell className="font-medium text-muted-foreground">Non assegnato</TableCell>
@@ -81,17 +85,15 @@ const confirm = () => {
                     key={op.id} 
                     className={cn(
                       "cursor-pointer hover:bg-muted/80 transition-colors",
-                      selected === op.id && "bg-primary/10 border-l-4 border-l-primary"
+                      selected.includes(op.id) && "bg-primary/10 border-l-4 border-l-primary"
                     )}
-                    onClick={() => selectOperator(op.id)}
+                    onClick={() => toggleOperator(op.id)}
                   >
                     <TableCell>
-                      <div className={cn(
-                        "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-                        selected === op.id ? "border-primary bg-primary" : "border-muted-foreground"
-                      )}>
-                        {selected === op.id && <div className="w-2 h-2 rounded-full bg-white" />}
-                      </div>
+                      <Checkbox 
+                        checked={selected.includes(op.id)}
+                        onCheckedChange={() => toggleOperator(op.id)}
+                      />
                     </TableCell>
                     <TableCell className="font-medium">{op.name}</TableCell>
                     <TableCell>{op.role}</TableCell>

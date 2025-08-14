@@ -27,6 +27,8 @@ export interface EventItem {
   brandId: ID;
   address: string;
   activityCode?: string;
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string;   // YYYY-MM-DD
 }
 
 export interface Task {
