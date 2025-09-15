@@ -15,6 +15,7 @@ import NotificationSettingsPage from "./pages/NotificationSettings";
 import OperatorDashboard from "./pages/OperatorDashboard";
 import OperatorShiftDetail from "./pages/OperatorShiftDetail";
 import Auth from "./pages/Auth";
+import OperatorProfile from "./pages/OperatorProfile";
 import Header from "./components/layout/Header";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -59,7 +60,7 @@ const App = () => (
                 <Clienti />
               </ProtectedRoute>
             } />
-            <Route path="/notifications/settings" element={
+            <Route path="/notification-settings" element={
               <ProtectedRoute>
                 <Header />
                 <NotificationSettingsPage />
@@ -69,6 +70,12 @@ const App = () => (
               <ProtectedRoute>
                 <Header />
                 <OperatorDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/operator/profile" element={
+              <ProtectedRoute>
+                <Header />
+                <OperatorProfile />
               </ProtectedRoute>
             } />
             <Route path="/operator/shift/:shiftId" element={
